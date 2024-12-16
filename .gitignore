@@ -2,11 +2,9 @@
 .Rhistory
 .RData
 .Ruserdata
-data
 doc
 old
 output
 presentation
-ref
-report
-WP2
+v0
+si_presentation_IFS.R
