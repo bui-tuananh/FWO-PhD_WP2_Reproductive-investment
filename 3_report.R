@@ -262,6 +262,43 @@ ggsave(last_plot(), file = file.path(dir_report, "fig2_intrinsic-effect_body-wei
        units = "cm",
        dpi = 1200)
 
+### summary -----
+pred_iso_1000 <- data %>%
+  left_join(df_iso) %>%
+  left_join(df_label) %>%
+  mutate(fit_iso = a + b*log.body_weight + b_c*mean(condition)) %>%
+  mutate(fit_iso_1000 = a + b*log(1000) + b_c*mean(condition),
+         fit_iso_1000_exp = exp(fit_iso_1000)) %>%
+  select(pop, a, b, b_c, fit_iso_1000, fit_iso_1000_exp) %>%
+  unique()
+
+pred_hyper_1000 <- tibble()
+for(pop_name in unique(data$pop)) {
+  
+  print(paste("processing", pop_name))
+  
+  model <- m2_w
+  
+  data_sub <- data %>% filter(pop == pop_name)
+  var_value <- c(log(1000), log(2000))
+  
+  pred_temp <- as.data.frame(Effect(c("log.body_weight", "pop"), 
+                                    model, 
+                                    xlevels = list("log.body_weight" = var_value))) %>%
+    filter(pop == pop_name) %>%
+    filter(log.body_weight == min(log.body_weight))
+  
+  pred_hyper_1000 <- bind_rows(pred_hyper_1000, pred_temp)
+  
+}
+pred_hyper_1000 <- pred_hyper_1000 %>%
+  mutate(fit_hyper_1000_exp = exp(fit))
+
+pred_iso_hyper_1000 <- select(pred_iso_1000, pop, fit_iso_1000_exp) %>%
+  left_join(select(pred_hyper_1000, pop, fit_hyper_1000_exp), by = "pop") %>%
+  mutate(diff = (fit_hyper_1000_exp - fit_iso_1000_exp)/fit_iso_1000_exp*100) %>%
+  mutate(across(where(is.numeric), round, 1))
+
 ## fig3 - intrinsic effect | others -----
 ### condition ----
 pred <- as.data.frame(Effect(c("condition"), 
@@ -998,7 +1035,7 @@ list_model <- list("Intrinsic model (body weight)" = m2_w,
 pred <- tibble()
 for(i in 1:2) {
   
-  model <- list_model[[1]]
+  model <- list_model[[i]]
   data <- model@frame
   
   pred_temp <- data %>%
@@ -1056,7 +1093,7 @@ list_model <- list("Extrinsic model (body weight)" = m3_w,
 pred <- tibble()
 for(i in 1:2) {
   
-  model <- list_model[[1]]
+  model <- list_model[[i]]
   data <- model@frame
   
   pred_temp <- data %>%
