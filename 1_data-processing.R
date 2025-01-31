@@ -1,6 +1,5 @@
 # BEFORE
-# 0_data-exploration
-# 1_data-processing
+# 1_data-processing_peak-gsi
 
 # SETUP ----
 library(tidyverse)  # data processing

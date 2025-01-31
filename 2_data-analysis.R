@@ -1,5 +1,4 @@
 # BEFORE
-# 0_data-exploration
 # 1_data-processing
 
 # AFTER
