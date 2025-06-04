@@ -630,7 +630,7 @@ ggsave(last_plot(), file = file.path(dir_report, "fig6_pop.png"),
        scale = 1.2)
 ggsave(last_plot(), file = file.path(dir_report, "fig6_pop.pdf"),
        device = cairo_pdf,
-       width =  8.5*1.2, height = 5.5*1.2,
+       width =  8.5*1.2, height = 11*1.2,
        units = "cm")
 
 # TABLE ----
@@ -944,7 +944,7 @@ ggsave(last_plot(), file = file.path(dir_report, "figS_correlation_7a.png"),
        width =  17, height = 15,
        units = "cm",
        dpi = 1200)
-ggsave(last_plot(), file = file.path(dir_report, "figS_temp.pdf"),
+ggsave(last_plot(), file = file.path(dir_report, "figS_correlation_7a.pdf"),
        width =  17, height = 12,
        units = "cm",
        dpi = 1200)
