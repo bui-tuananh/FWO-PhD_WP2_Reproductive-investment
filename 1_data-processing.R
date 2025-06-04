@@ -125,11 +125,11 @@ View(data_obs %>%
 # 7a: 3-14
 # 7d: 3-19
 # 7fg: 3-16
-data_obs <- data_obs %>%
-  filter(age >= if_else(pop == "4bc", 2, 3), 
-         age <= if_else(pop == "4bc", 12, 
-                        if_else(pop == "7a", 14,
-                                if_else(pop == "7d", 19, 16))))
+# data_obs <- data_obs %>%
+#   filter(age >= if_else(pop == "4bc", 2, 3), 
+#          age <= if_else(pop == "4bc", 12, 
+#                         if_else(pop == "7a", 14,
+#                                 if_else(pop == "7d", 19, 16))))
 
 # add pop:week, pop:year
 data_obs <- data_obs %>%

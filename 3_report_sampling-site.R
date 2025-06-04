@@ -16,10 +16,9 @@ dir_report <- "./report" # not indicate dir_report
 
 # POPULATION NAME
 # create df_pop
-df_pop <- tibble(IcesAreaGroup = c("4bc", "7a", "7fg", "7d"),
-                 pop = c("4bc", "7a", "7fg", "7d"),
-                 pop_name = factor(c("North Sea", "Irish Sea", "Celtic Sea", "Eastern English Channel"),
-                                   levels = c("North Sea", "Irish Sea", "Celtic Sea", "Eastern English Channel")))
+df_pop <- tibble(pop = c("4bc", "7a", "7fg", "7d"),
+                 pop_name = factor(c("North Sea", "Irish Sea", "Bristol Channel, Celtic Sea North", "Eastern English Channel"),
+                                   levels = c("North Sea", "Irish Sea", "Bristol Channel, Celtic Sea North", "Eastern English Channel")))
 
 # THEME
 theme_set(theme_bw())
@@ -193,6 +192,42 @@ oras5_df <- oras5 %>%
   as.data.frame() %>%
   filter(is.na(mean) == F)
 
+## 2.3. Temp autumn winter ----
+dir_temp <- "./data/temp"
+data_temp <- read_rds(file.path(dir_temp, "oras5_datras.rds")) 
+
+# temp_autumn
+data_temp_autumn <- data_temp %>%
+  mutate(pop = if_else(IcesArea == "4abc", "4bc", IcesArea),
+         month = month(Date),
+         year = Year)  %>%
+  filter(month >= 10 | month <= 12) %>%
+  #filter(year >= 2002) %>%
+  group_by(pop, year) %>%
+  summarize(temp_aut = mean(oras_sbt)) %>%
+  mutate(year = year + 1) #autumn 2018 - corresponding to data 2019
+
+# temp_winter
+data_temp_winter <- data_temp %>%
+  mutate(pop = if_else(IcesArea == "4abc", "4bc", IcesArea),
+         month = month(Date),
+         year = Year) %>%
+  filter(month >= 1 | month <= 3) %>%
+  #filter(year >= 2002) %>%
+  group_by(pop, year) %>%
+  summarize(temp_win = mean(oras_sbt)) 
+
+# aut_win
+data_temp_aut_win <- data_temp_autumn %>%
+  left_join(data_temp_winter) %>%
+  drop_na() %>% 
+  mutate(temp = (temp_aut + temp_win)/2 )
+
+data_temp_aut_win <- data_temp_aut_win %>%
+  group_by(pop) %>%
+  mutate(ave.temp = mean(temp),
+         c.temp = temp - ave.temp)
+
 # 3. PLOT DATA -------------
 
 ## main study area --------
@@ -233,31 +268,85 @@ ggplot() +
     breaks = slice(legend, c(1,3,5,7,9,11))$breaks,
     labels = sprintf("%.1f", slice(legend, c(1,3,5,7,9,11))$labels),
     limits = c(0,1),
-    guide = guide_colorbar(title = "Average bottom temperature (°C) \n (2004-2022)", 
+    guide = guide_colorbar(title = "Annual temperature (°C) \n (2004-2022)", 
                            title.position = "top", #left
                            #title.vjust = 0.7,
                            #barwidth = 6,
                            title.hjust = 0.5)) +
   labs(x = "Longitude",
        y = "Latitude") +
-  theme(legend.position = c(0.99, 0.001),
+  theme(legend.position = c(0.999, 0.03), #(0.99, 0.001)
         legend.justification = c(1, 0),
         legend.direction="horizontal",
-        legend.key.height = unit(10, "pt"),
-        legend.key.width = unit(15, "pt"),
-        legend.title = element_text(size = 6),
+        legend.key.height = unit(6, "pt"), #10
+        legend.key.width = unit(12, "pt"), #15
+        legend.title = element_text(size = 5),
+        legend.text = element_text(size =4),
+        axis.text = element_text(size = 7),
+        axis.title = element_text(size = 9),
+        legend.background = element_rect(fill = "transparent"),
+        legend.box.background = element_rect(fill = "transparent", color = NA)
+        ) 
+p1 <- last_plot()
+
+## temperature trend ----
+summary(lm(c.temp ~ year, data_temp_aut_win %>% filter(pop == "4bc")))
+summary(lm(c.temp ~ year, data_temp_aut_win %>% filter(pop == "7a")))
+summary(lm(c.temp ~ year, data_temp_aut_win %>% filter(pop == "7fg")))
+summary(lm(c.temp ~ year, data_temp_aut_win %>% filter(pop == "7fg", year >= 1970)))
+summary(lm(c.temp ~ year, data_temp_aut_win %>% filter(pop == "7d")))
+
+data_temp_aut_win <- data_temp_aut_win %>% 
+  left_join(df_pop) %>%
+  filter(pop %in% c("4bc", "7a", "7fg", "7d"))
+
+# get 7fg only from 1970
+data_temp_sub <- data_temp_aut_win %>% filter((pop != "7fg") | (pop == "7fg" & year >= 1970))
+
+ggplot() +
+  geom_rect(aes(xmin = 2004, xmax = 2022, ymin = -Inf, ymax = Inf), fill = "grey", alpha = 0.2) +
+  geom_line(data = data_temp_aut_win, 
+            aes(x = year, y = temp, color = pop_name),
+            linewidth = 0.5) +
+  geom_smooth(data = data_temp_sub, aes(x = year, y = temp, color = pop_name), 
+              method = "lm", se = F, linetype = "dashed", linewidth = 0.5) +
+  scale_color_manual(values = c("#2c7bb6", "#abd9e9", "#fdae61", "#d7191c")) +
+  labs(x = "Year",
+       y = "Autumn-winter temperature (°C)",
+       color = "Population") +
+  theme(#legend.position = "bottom",
+        #legend.title.position = "top",
+        #legend.title.align = 0.5,
+        legend.position = c(0.25, 0.92),
+        #legend.justification = c(1, 0),
+        #legend.direction="horizontal",
+        legend.key.height = unit(1, "pt"),
+        legend.key.width = unit(7, "pt"),
+        #legend.key.size = unit(3, "pt"),
+        legend.title = element_text(size = 5),
         legend.text = element_text(size = 5),
         axis.text = element_text(size = 7),
-        axis.title = element_text(size = 9)
-        ) 
+        axis.title = element_text(size = 9),
+        legend.background = element_rect(fill = "transparent"),
+        legend.box.background = element_rect(fill = "transparent", color = NA)
+  ) 
+p2 <- last_plot()
 
 ## save plot -----
-ggsave(last_plot(), file = file.path(dir_report, "fig1_sampling-site.pdf"),
-       device = cairo_pdf,
-       width = 17, height = 14,
-       units = "cm")
-ggsave(last_plot(), file = file.path(dir_report, "fig1_sampling-site.png"),
-       width = 17, height = 14, 
+layout <- "
+AB
+"
+
+p3 <- (p1 + p2) + 
+  plot_layout(design = layout) + 
+  plot_annotation(tag_levels = "A")
+
+ggsave(p3, file = file.path(dir_report, "fig1_sampling-site.png"),
+       width = 17, height = 12, 
        units = "cm",  
        dpi = 1200)
 
+ggsave(p3, file = file.path(dir_report, "fig1_sampling-site.png"),
+       width = 17, height = 12, 
+       units = "cm",  
+       dpi = 1200)
