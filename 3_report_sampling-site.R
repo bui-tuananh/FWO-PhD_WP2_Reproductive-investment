@@ -290,6 +290,13 @@ ggplot() +
 p1 <- last_plot()
 
 ## temperature trend ----
+# over study period
+summary(lm(c.temp ~ year, data_temp_aut_win %>% filter(pop == "4bc", year >= 2004))) #no
+summary(lm(c.temp ~ year, data_temp_aut_win %>% filter(pop == "7a", year >= 2004))) #no
+summary(lm(c.temp ~ year, data_temp_aut_win %>% filter(pop == "7fg", year >= 2004))) #no
+summary(lm(c.temp ~ year, data_temp_aut_win %>% filter(pop == "7d", year >= 2004))) #yes
+
+# over whole temp data range
 summary(lm(c.temp ~ year, data_temp_aut_win %>% filter(pop == "4bc")))
 summary(lm(c.temp ~ year, data_temp_aut_win %>% filter(pop == "7a")))
 summary(lm(c.temp ~ year, data_temp_aut_win %>% filter(pop == "7fg")))
