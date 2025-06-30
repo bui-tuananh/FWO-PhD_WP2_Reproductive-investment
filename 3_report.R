@@ -134,6 +134,19 @@ list_m2 <- c("4bc" = m2_4bc,
 m3 <- read_rds("./output/m3.rds")
 m3_temp <- read_rds("./output/m3_temp.rds")
 
+# SUMMARY ----
+# n and year self-sampling ----
+sol_full <- read_rds("./data/sol_gonads_2004_2023.rds")
+sol %>% group_by(TRI.ProjectTypeDescription) %>%
+  summarise(range(TRI.Year))
+table(sol$TRI.ProjectTypeDescription)
+703/32629*100 # 2% seflsampling
+
+# n male in the whole dataset
+sol_full_sub <- read_rds("./data/sol_gonads_2004_2023_sub.rds")
+table(sol_full_sub$SPE.Sex)
+286/32629*100 # < 1%
+
 # FIGURE ----
 ## fig1 - sampling site + temp -----
 source("./3_report_sampling-site.R")

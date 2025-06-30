@@ -10,7 +10,7 @@ library(tidyverse)
 
 sol <- read_rds("./data/sol_gonads_2004_2023.rds") 
 
-sol_sub <- obs %>% 
+sol_sub <- sol %>% 
   select(TRI.Year, 
          TRI.DepartureDate,
          TRI.ReturnDate,
