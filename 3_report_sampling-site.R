@@ -353,7 +353,8 @@ ggsave(p3, file = file.path(dir_report, "fig1_sampling-site.png"),
        units = "cm",  
        dpi = 1200)
 
-ggsave(p3, file = file.path(dir_report, "fig1_sampling-site.png"),
+ggsave(p3, file = file.path(dir_report, "fig1_sampling-site.pdf"),
+       device = cairo_pdf,
        width = 17, height = 12, 
-       units = "cm",  
-       dpi = 1200)
+       units = "cm")
+
