@@ -1,0 +1,239 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+Compare ICES CTD data and ORAS5
+
+# 1. SETUP
+```{r message=FALSE, warning=FALSE}
+# load packages
+library(tidyverse)  # process dataframe
+library(lubridate)  # process date time 
+library(readr)      # read csv
+library(sf)         # process GIS files
+library(stars)      # process raster files
+library(viridis)    # color scale
+library(tmap)       # plot map
+library(patchwork)
+
+# working directories
+dir_gis <- "./data/admin"
+dir_temp <- "./data/temp"
+
+```
+
+# 2. READ DATA
+## ices area
+```{r}
+## ICES AREA
+ices_area <- read_sf(file.path(dir_gis, "ices_areas_sub_group_4abc_4326_new.gpkg")) ##"ices_areas_sub_group_4326_new.gpkg"
+ices_area <- ices_area %>% 
+  mutate(IcesArea = Area_27) %>%
+  filter(IcesArea %in% c("4abc", "7a", "7d", "7fg")) 
+
+#### plot 
+#tm_shape(ices_area) + tm_borders()
+```
+
+## ctd
+```{r}
+## CTD
+ctd <- read_sf(file.path(dir_temp, "ices_ctd_sea-bottom-temperature.gpkg"))
+ctd <- ctd %>% 
+  mutate(IcesArea = Area_27) %>%
+  filter(IcesArea %in% c("4abc", "7a", "7d", "7fg")) %>%
+  mutate(ctd = temp_degC, 
+         date_match = as.Date(paste0("01", "-", Month, "-", Year),format = "%d-%m-%Y"))
+
+# plot 
+p1 <- tm_shape(ctd %>% filter(Year == 1972),
+               bbox = st_bbox(ices_area)) + 
+  tm_dots() +
+  tm_shape(ices_area) + 
+  tm_borders() +
+  tm_layout(panel.labels = "1972")
+
+p2 <- tm_shape(ctd %>% filter(Year == 1980), 
+         bbox = st_bbox(ices_area)) +  
+  tm_dots() +
+  tm_shape(ices_area) + 
+  tm_borders() +
+  tm_layout(panel.labels = "1980")
+
+p3 <- tm_shape(ctd %>% filter(Year == 2000), 
+         bbox = st_bbox(ices_area)) +  
+  tm_dots() +
+  tm_shape(ices_area) + 
+  tm_borders() + 
+  tm_layout(panel.labels = "2000")
+
+p4 <- tm_shape(ctd %>% filter(Year == 2020), 
+         bbox = st_bbox(ices_area)) + 
+  tm_dots() +
+  tm_shape(ices_area) + 
+  tm_borders() + 
+  tm_layout(panel.labels = "2020")
+
+tmap_arrange(p1, p2, p3, p4)
+```
+
+## temp raster
+```{r}
+## TEMP RASTER 
+oras <- read_stars(file.path(dir_temp, "oras5.tif"))
+
+## make sure everything has the same crs
+#st_crs(isimip) = st_crs(oras) = st_crs(nm) = st_crs(ctd)
+```
+
+```{r message=FALSE, warning=FALSE}
+## plot raster (bounded by bbox ices_div) 
+# ctd in year 2000
+# raster in 01.2000
+
+## setup
+# bounding box
+bb <- st_bbox(ices_area)
+breaks = c(0, 6, 7, 8, 9, 10, 12, 16)
+
+## plot
+# oras5
+tm_shape(oras[,,,301][bb]) +
+  tm_raster(title = '',
+            palette = "-RdYlBu", 
+            breaks = breaks,
+            midpoint = NA) +
+  #tm_shape(ctd %>% filter(Year == 2000)) + 
+  #tm_dots(alpha = 0.2) +
+  tm_shape(ices_area) + 
+  tm_borders() +
+  tm_layout(legend.position = c("right", "bottom"),
+            panel.labels = "oras5",
+            legend.text.size = 0.5)
+
+```
+
+# 4. PROCESS RASTER
+
+## process raster
+
+```{r}
+#### oras5
+## change attribute name to temp
+oras <- setNames(oras, c("temp"))
+
+## change band dimension to time dimension
+# get date values from band$values
+year <- str_sub(attr(oras, "dimensions")$band$values, start = 1, end = 4)
+month <- str_sub(attr(oras, "dimensions")$band$values, start = 6, end = 7)
+date <- as.Date(paste0("01", "-", month, "-", year),format = "%d-%m-%Y")
+
+oras <- st_set_dimensions(oras, 3, values = date, names = "time")
+```
+
+## extract ctd values
+```{r}
+## extract raster values at ctd points 
+oras_extract <-  st_extract(oras, ctd, time_column = "date_match")
+```
+
+```{r message=FALSE, warning=FALSE}
+## join ctd and raster extracted values
+# oras5
+oras_ctd <- left_join(as.data.frame(ctd), 
+                        as.data.frame(oras_extract),
+                        by = join_by(geom, date_match)) %>%
+  unique() %>%
+  mutate(source = "oras5")
+```
+
+```{r}
+## combine all  
+temp_ctd <- oras_ctd
+
+temp_ctd %>% group_by(Area_27) %>% summarize(n = n())
+```
+
+## temperature vs ctd correlation
+
+### all time series
+```{r}
+## get list of source and area
+source_list <- unique(temp_ctd$source)
+area_list <- unique(temp_ctd$IcesArea)
+```
+
+```{r message=FALSE, warning=FALSE}
+## extract correlation at ctd locations
+
+temp_ctd_cor <- tibble()
+for (s in 1:length(source_list)) {
+  for (i in 1:length(area_list)) {
+    ## note
+    #print(paste("processing", source[s], ices_area[i]))
+    
+    ## subset temp_ctd
+    temp_ctd_sub <- temp_ctd %>% filter(is.na(temp) == F,
+                                    source == source_list[s],
+                                    IcesArea == area_list[i] 
+                                    )
+    
+    ## linear regression
+    lm <- lm(temp ~ ctd, data = temp_ctd_sub)
+    cor_test <- cor.test(temp_ctd_sub$temp, temp_ctd_sub$ctd, method = "pearson")
+    
+    ## df with r_squared
+    df_temp <- tibble(source = source_list[s],
+                      ices_area = area_list[i],
+                      r_squared = round(summary(lm)$adj.r.squared, 2),
+                      cor = round(cor_test$estimate,2),
+                      cor_p.value = cor_test$p.value)
+    
+    temp_ctd_cor <- bind_rows(temp_ctd_cor, df_temp)
+
+  }
+}
+```
+
+```{r message=FALSE, warning=FALSE}
+## extract correlation at ctd locations - monthly average 
+temp_ctd_cor_month <- tibble()
+for (s in 1:length(source_list)) {
+  for (i in 1:length(area_list)) {
+    ## note
+    #print(paste("processing", source[s], ices_area[i]))
+    
+    ## subset temp_ctd
+    temp_ctd_sub <- temp_ctd %>% 
+      filter(is.na(temp) == F,
+             source == source_list[s],
+             IcesArea == area_list[i]) %>%
+      group_by(source, IcesArea, date_match) %>%
+      summarize(ctd = mean(ctd, na.rm = T),
+                temp = mean(temp, na.rm = T))
+    
+    ## linear regression
+    lm <- lm(temp ~ ctd, data = temp_ctd_sub)
+    cor_test <- cor.test(temp_ctd_sub$temp, temp_ctd_sub$ctd, method = "pearson")
+    
+    ## df with r_squared
+    df_temp <- tibble(source = source_list[s],
+                      ices_area = area_list[i],
+                      r_squared = round(summary(lm)$adj.r.squared, 2),
+                      cor = round(cor_test$estimate,2),
+                      cor_p.value = cor_test$p.value)
+    
+    temp_ctd_cor_month <- bind_rows(temp_ctd_cor_month, df_temp)
+
+  }
+}
+```
+
+summary
+```{r}
+temp_ctd_cor
+```
+```{r}
+temp_ctd_cor_month
+```

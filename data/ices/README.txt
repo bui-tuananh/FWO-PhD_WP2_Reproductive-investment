@@ -1,0 +1,4 @@
+source: 
+https://ices-library.figshare.com/articles/report/Working_Group_on_the_Assessment_of_Demersal_Stocks_in_the_North_Sea_and_Skagerrak_WGNSSK_/22643143
+https://ices-library.figshare.com/articles/report/Working_Group_for_the_Bay_of_Biscay_and_the_Iberian_Waters_Ecoregion_WGBIE_/23541168
+https://ices-library.figshare.com/articles/report/Working_Group_for_the_Celtic_Seas_Ecoregion_WGCSE_/22268980
