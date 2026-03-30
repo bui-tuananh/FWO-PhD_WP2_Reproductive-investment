@@ -954,7 +954,7 @@ for(pop_name2 in unique(data$pop)) {
   ggplot(data = pred_sub, aes(x = log.length, y = res)) +
     geom_point(alpha = 0.3) +
     geom_hline(yintercept = 0, linetype = "dashed") +
-    labs(x  = "ln(Total body length) (g)",
+    labs(x  = "ln(Total body length) (mm)",
          y = "Residuals") 
   p2 <- last_plot()
 
@@ -1033,7 +1033,7 @@ for(pop_name2 in unique(data$pop)) {
   p1 <- last_plot()
   
   # res vs vars
-  ggplot(data = pred_sub, aes(x = temp, y = res)) +
+  ggplot(data = pred_sub, aes(x = log.temp, y = res)) +
     geom_point(alpha = 0.3, size = rel(0.8)) +
     geom_hline(yintercept = 0, linetype = "dashed") +
     labs(x  = "ln(Autumn-winter temperature) (°C)",
