@@ -513,7 +513,7 @@ ggsave(last_plot(), file = file.path(dir_report, "fig3_individual-effects.png"),
        scale = 1.1)
 ggsave(last_plot(), file = file.path(dir_report, "fig3_individual-effects.pdf"),
        device = cairo_pdf,
-       width =  17*1.7, height = 17*1.7,
+       width =  17*1.1, height = 17*1.1,
        units = "cm")
 
 ## fig4 - random effect ----
@@ -615,6 +615,7 @@ ggsave(last_plot(), file = file.path(dir_report, "fig4_random-effect.pdf"),
        units = "cm")
 
 ## fig5 - temp*length (min max) ----
+### fig_temp ----
 pred <- tibble()
 for(pop_name in c("4bc", "7a")) {
   
@@ -665,16 +666,7 @@ ggplot(data = pred, aes(x = temp, y = fit_exp )) +
   scale_color_manual(values = c("#2c7bb6", "#abd9e9")) +
   scale_fill_manual(values = c("#2c7bb6", "#abd9e9"))
 
-# save file
-ggsave(last_plot(), file = file.path(dir_report, "fig5_temp.png"),
-       width =  8.5, height = 11,
-       units = "cm",
-       dpi = 1200,
-       scale = 1.5)
-ggsave(last_plot(), file = file.path(dir_report, "fig5_temp.pdf"),
-       device = cairo_pdf,
-       width =  8.5*1.5, height = 11*1.5,
-       units = "cm")
+p_temp <- last_plot()
 
 ### summary ----
 pred <- tibble()
@@ -718,6 +710,54 @@ pred_sum <- pred %>%
   pivot_wider(names_from = temp_scale, values_from = fit_exp) %>%
   mutate(diff = (`0.5` - `0`)/`0`*100) %>%
   mutate(diff_name = sprintf("%.1f", diff)) 
+
+# fig_diff ----
+pred_sum <- pred_sum %>%
+  mutate(pop_label = ifelse(pop == "4bc", "North Sea", "Irish Sea"),
+         pop_label = factor(pop_label, levels = c("North Sea", "Irish Sea")),
+         x_pos = length + ifelse(pop == "4bc", -8, 8)
+  )
+pop_colors <- c("North Sea" = "#2c7bb6", "Irish Sea" = "#abd9e9")
+
+ggplot(pred_sum, aes(x = x_pos, color = pop_label, fill = pop_label)) +
+    geom_col(aes(xend = x_pos, y = diff),
+           linewidth = 0.6) +
+
+  # Reference line at y = 0
+  geom_hline(yintercept = 0, color = "gray50", linewidth = 0.3) +
+  
+  scale_color_manual(values = pop_colors,
+                     name = "Population") +
+  scale_fill_manual(values = pop_colors,
+                    name = "Population") +
+  
+  scale_x_continuous(breaks = c(250, 350, 450),
+                     labels = c("250", "350", "450")) +
+  
+  labs(x = "Total body length (mm)",
+       y = "Change of gonad weight (%)") +
+  theme(
+    panel.grid.major = element_line(color = "gray90"),
+    panel.grid.minor = element_blank(),
+    legend.position  = "bottom",
+    legend.title.position = "top",
+    legend.title = element_text(hjust = 0.5)
+  )
+
+p_diff <- last_plot()
+
+### save file ----
+p_temp + p_diff + plot_annotation(tag_levels = 'A')
+
+ggsave(last_plot(), file = file.path(dir_report, "fig5_temp.png"),
+       width =  17, height = 11,
+       units = "cm",
+       dpi = 1200,
+       scale = 1.1)
+ggsave(last_plot(), file = file.path(dir_report, "fig5_temp.pdf"),
+       device = cairo_pdf,
+       width =  17*1.1, height = 11*1.1,
+       units = "cm")
 
 # TABLE ----
 ## table 1 - in text ----
