@@ -735,7 +735,7 @@ ggplot(pred_sum, aes(x = x_pos, color = pop_label, fill = pop_label)) +
                      labels = c("250", "350", "450")) +
   
   labs(x = "Total body length (mm)",
-       y = "Change of gonad weight (%)") +
+       y = "Change in ovary weight (%)") +
   theme(
     panel.grid.major = element_line(color = "gray90"),
     panel.grid.minor = element_blank(),
