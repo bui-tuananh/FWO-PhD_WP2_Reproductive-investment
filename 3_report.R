@@ -364,7 +364,7 @@ ggplot() +
        fill = "Population") +
   scale_color_manual(values = c("#2c7bb6", "#abd9e9", "#fdae61", "#d7191c")) +
   scale_fill_manual(values = c("#2c7bb6", "#abd9e9", "#fdae61", "#d7191c")) +
-  theme(legend.position = c(0.2, 0.8), #0.28, 0.88 
+  theme(legend.position = c(0.3, 0.8), #0.28, 0.88 
         legend.background = element_rect(fill = "transparent"))
 p1 <- last_plot()
 
@@ -510,7 +510,7 @@ ggsave(last_plot(), file = file.path(dir_report, "fig3_individual-effects.png"),
        width =  17, height = 17, 
        units = "cm",
        dpi = 1200,
-       scale = 1.7)
+       scale = 1.1)
 ggsave(last_plot(), file = file.path(dir_report, "fig3_individual-effects.pdf"),
        device = cairo_pdf,
        width =  17*1.7, height = 17*1.7,
